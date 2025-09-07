@@ -25,7 +25,7 @@
         </select>
         <div>
             <button class="btn btn-secondary">Add Department</button>
-            <a href="{{ route('employees.add.form') }}" class="btn btn-primary">Add Employee</a>
+            <a href="{{ route('employees.create') }}" class="btn btn-primary">Add Employee</a>
         </div>
     </div>
 
@@ -56,7 +56,7 @@
                         <td>{{ $employee->bank_account }}</td>
                         <td>{{ $employee->contact }}</td>
                         <td>
-                            <a href="{{ route('employees.view', $employee->id) }}" class="btn btn-sm btn-info">View</a>
+                            <a href="{{ route('employees.show', $employee->id) }}" class="btn btn-sm btn-info">View</a>
                             <a href="#" class="btn btn-sm btn-danger">Delete</a>
                         </td>
                     </tr>

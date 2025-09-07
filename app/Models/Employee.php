@@ -46,7 +46,17 @@ class Employee extends Model
     {
         return $this->hasMany(EmployeeSchedule::class);
     }
+
+    public function scheduleFiles()
+    {
+        return $this->hasMany(ScheduleFile::class, 'employee_id');
+    }
     
+    public function getFullNameAttribute()
+    {
+        $middle = $this->middle_name ? ' ' . $this->middle_name : '';
+        return "{$this->last_name}, {$this->first_name}{$middle}";
+    }
 }
 
 

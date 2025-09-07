@@ -84,7 +84,11 @@
                 <span>Schedule</span>
             </a>
             </li>
-            <li><i data-lucide="percent"></i><span>Deduction</span></li>
+            <li class="{{ $currentRoute == 'deductions.index' ? 'active' : '' }}">
+                <a href="{{ route('deductions.index') }}">
+                    <i data-lucide="percent"></i><span>Deduction</span>
+                </a>
+            </li>
             <li> <i data-lucide="badge-percent"></i><span>Premium</span></li>
             <li><i data-lucide="file-text"></i><span>Payroll</span></li>
             <li><i data-lucide="wallet"></i><span>Pay Slip</span></li>

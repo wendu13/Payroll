@@ -53,36 +53,42 @@ class ScheduleController extends Controller
     {
         $validated = $request->validate([
             'weeks' => 'required|integer|min:1|max:4',
+            'days_json' => 'required|string',
+            'time_in' => 'required',
+            'time_out' => 'required',
         ]);
-    
-        $cutoff = \App\Models\CutoffSchedule::latest()->first(); // or specific cutoff
-        $startDate = now(); // today
-        $endDate = now()->addWeeks($validated['weeks'])->subDay();
-    
-        $period = new \DatePeriod(
-            $startDate,
-            new \DateInterval('P1D'),
-            $endDate->copy()->addDay()
-        );
-    
-        foreach ($period as $date) {
+
+        $cutoff = \App\Models\CutoffSchedule::latest()->first();
+
+        $days = json_decode($validated['days_json'], true);
+
+        foreach ($days as $day) {
             \App\Models\EmployeeSchedule::create([
                 'employee_id' => $employeeId,
                 'cutoff_schedule_id' => $cutoff->id,
-                'date' => $date->format('Y-m-d'),
-                'start_time' => $cutoff->regular_start,
-                'end_time' => $cutoff->regular_end,
-                'type' => in_array($date->format('N'), [6,7]) ? 'restday' : 'regular', // Sat/Sun restday
+                'date' => $day['date'],
+                'start_time' => $validated['time_in'],
+                'end_time' => $validated['time_out'],
+                'type' => $day['type'], // working o restday, depende sa pinili
             ]);
         }
-    
+
         return back()->with('success', 'Schedule generated successfully.');
     }
+
     
-    public function view($id)
+    public function view($employeeId, $cutoffId)
     {
-        $schedule = Schedule::findOrFail($id);
-        return view('schedules.view', compact('schedule'));
+        $employee = Employee::with('department')->findOrFail($employeeId);
+        $cutoff   = CutoffSchedule::findOrFail($cutoffId);
+    
+        // kunin lahat ng schedules sa cutoff
+        $schedules = EmployeeSchedule::where('employee_id', $employeeId)
+            ->where('cutoff_schedule_id', $cutoffId)
+            ->orderBy('date')
+            ->get();
+    
+        return view('schedules.file', compact('employee','cutoff','schedules'));
     }
 
     public function print($id)

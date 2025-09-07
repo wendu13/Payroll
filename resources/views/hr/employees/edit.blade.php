@@ -6,7 +6,7 @@
     <h2>Edit Employee</h2>
 </div>
 
-<form method="POST" action="{{ route('employees.update', $employee->id) }}" enctype="multipart/form-data" class="p-4">
+<form action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data" class="p-4">
     @csrf
 
     <div class="add-employee-form-wrapper">

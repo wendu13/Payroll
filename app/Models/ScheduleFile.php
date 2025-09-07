@@ -5,18 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class EmployeeSchedule extends Model
+class ScheduleFile extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'employee_id',
         'cutoff_schedule_id',
-        'date',
-        'start_time',
-        'end_time',
-        'type',
-        'remarks',
+        'time_in',
+        'time_out',
+        'weeks',
+        'days_json', // optional, kung gusto mo i-store selection
     ];
 
     public function employee()
@@ -29,9 +28,8 @@ class EmployeeSchedule extends Model
         return $this->belongsTo(CutoffSchedule::class, 'cutoff_schedule_id');
     }
 
-    public function schedules()
+    public function employeeSchedules()
     {
-        return $this->hasMany(EmployeeSchedule::class);
+        return $this->hasMany(EmployeeSchedule::class, 'schedule_file_id');
     }
-    
 }

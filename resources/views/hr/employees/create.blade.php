@@ -6,7 +6,7 @@
         <h2>Add Employee</h2>
     </div>
 
-    <form method="POST" action="{{ route('employees.add') }}" enctype="multipart/form-data" class="p-4">
+    <form method="POST" action="{{ route('employees.create') }}" enctype="multipart/form-data" class="p-4">
         @csrf
 
         <div class="add-employee-form-wrapper">

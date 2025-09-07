@@ -1,26 +1,28 @@
 @extends('layouts.hr')
 
+{{-- Fixed header title --}}
 @section('page-title', 'Calendar Management')
 
 @section('hr-content')
-<div class="container mt-4">
+<div class="container">
     <div class="row">
         {{-- LEFT SIDE --}}
         <div class="col-md-7">
-            <h4 class="fw-bold">Annual Calendar (Holidays)</h4>
+            {{-- Subheading (optional, pwede mo burahin kung ayaw mo) --}}
+            <h5 class="fw-bold mb-3">Annual Calendar (Holidays)</h5>
 
             {{-- Controls: Month Navigation --}}
             <div class="d-flex align-items-center gap-2 my-3">
                 <button class="btn btn-outline-secondary btn-sm" id="prevMonth">&laquo; Prev</button>
                 <button class="btn btn-outline-secondary btn-sm" id="nextMonth">Next &raquo;</button>
 
-                <select class="form-select form-select-sm w-auto ms-2" id="monthSelect">
+                <select class="form-select form-select-sm ms-2" id="monthSelect" style="width: 150px;">
                     @for ($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}">{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
                     @endfor
                 </select>
 
-                <select class="form-select form-select-sm w-auto" id="yearSelect">
+                <select class="form-select form-select-sm" id="yearSelect" style="width: 85px;">
                     @for ($y = 2020; $y <= 2030; $y++)
                         <option value="{{ $y }}" {{ $y == 2025 ? 'selected' : '' }}>{{ $y }}</option>
                     @endfor
@@ -31,7 +33,7 @@
             </div>
 
             {{-- Calendar Table --}}
-            <table class="table table-bordered calendar-table text-center" id="calendarTable">
+            <table class="table table-bordered calendar-table text-center mx-auto" id="calendarTable" style="width: 100%;">
                 <thead>
                     <tr class="table-primary">
                         <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th>
@@ -52,8 +54,8 @@
 
         {{-- RIGHT SIDE --}}
         <div class="col-md-5">
-        <form method="POST" action="{{ route('calendar.store') }}">
-            <h5 class="fw-bold">Nationwide Holidays</h5>
+            <form method="POST" action="{{ route('calendar.store') }}">
+                <h5 class="fw-bold">Nationwide Holidays</h5>
                 @csrf
                 <table class="table table-sm table-bordered mt-2">
                     <thead class="table-light">
@@ -67,27 +69,27 @@
                     <tbody id="holidayList">
                         @foreach ($holidays as $holiday)
                             <tr>
-                            @if ($holiday->is_nationwide)
-                                <td><input type="date" class="form-control form-control-sm" value="{{ $holiday->date }}" readonly></td>
-                                <td><input type="text" class="form-control form-control-sm" value="{{ $holiday->name }}" readonly></td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm" value="{{ $holiday->type }}" readonly>
-                                </td>
-                            @else
-                                <td><input type="date" name="holidays[{{ $loop->index }}][date]" class="form-control form-control-sm" value="{{ $holiday->date }}"></td>
-                                <td><input type="text" name="holidays[{{ $loop->index }}][name]" class="form-control form-control-sm" value="{{ $holiday->name }}"></td>
-                                <td>
-                                    <select name="holidays[{{ $loop->index }}][type]" class="form-select form-select-sm">
-                                        <option value="Regular" {{ $holiday->type == 'Regular' ? 'selected' : '' }}>Holiday</option>
-                                        <option value="Special" {{ $holiday->type == 'Special' ? 'selected' : '' }}>Special</option>
-                                    </select>
-                                </td>
-                            @endif
-                            <td>
-                                @if (!$holiday->is_nationwide)
-                                    <button type="button" class="btn btn-sm btn-danger remove-row">Delete</button>
+                                @if ($holiday->is_nationwide)
+                                    <td><input type="date" class="form-control form-control-sm" value="{{ $holiday->date }}" readonly></td>
+                                    <td><input type="text" class="form-control form-control-sm" value="{{ $holiday->name }}" readonly></td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" value="{{ $holiday->type }}" readonly>
+                                    </td>
+                                @else
+                                    <td><input type="date" name="holidays[{{ $loop->index }}][date]" class="form-control form-control-sm" value="{{ $holiday->date }}"></td>
+                                    <td><input type="text" name="holidays[{{ $loop->index }}][name]" class="form-control form-control-sm" value="{{ $holiday->name }}"></td>
+                                    <td>
+                                        <select name="holidays[{{ $loop->index }}][type]" class="form-select form-select-sm">
+                                            <option value="Regular" {{ $holiday->type == 'Regular' ? 'selected' : '' }}>Holiday</option>
+                                            <option value="Special" {{ $holiday->type == 'Special' ? 'selected' : '' }}>Special</option>
+                                        </select>
+                                    </td>
                                 @endif
-                            </td>
+                                <td>
+                                    @if (!$holiday->is_nationwide)
+                                        <button type="button" class="btn btn-sm btn-danger remove-row">Delete</button>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -102,6 +104,7 @@
                     </div>
                 @endif
             </form>
+
             <form action="{{ route('calendar.reset') }}" method="POST" class="mt-2">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger btn-sm"
@@ -286,8 +289,18 @@ console.log('Calendar script loaded');
         background-color: #032260 !important;
         color: white;
     }
+
     .selected-special {
         background-color: #add8e6 !important;
+    }
+
+    .calendar-table th,
+    .calendar-table td {
+        font-size: 0.8rem;
+        padding: 4px;
+        height: 50px;
+        vertical-align: middle;
+        text-align: center;
     }
 </style>
 @endpush

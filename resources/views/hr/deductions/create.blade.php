@@ -1,11 +1,10 @@
 @extends('layouts.hr')
 
-@section('hr-content')
-<div class="container">
-    <h4 class="mb-3">Add Deduction</h4>
+@section('page-title', 'Add Deduction')
 
-    <form action="{{ route('deductions.store') }}" method="POST">
-        @csrf
+@section('hr-content')
+<form action="{{ route('deductions.store') }}" method="POST">
+    @csrf
 
         {{-- Deduction Name (Dropdown) --}}
         <div class="mb-3">
@@ -54,38 +53,28 @@
     const deductionType = document.getElementById('deductionType');
     const extraFields = document.getElementById('extraFields');
 
-    // Show input if "Others" is selected
     deductionName.addEventListener('change', (e) => {
-        if (e.target.value === 'others') {
-            otherNameWrapper.classList.remove('d-none');
-        } else {
-            otherNameWrapper.classList.add('d-none');
-        }
+        otherNameWrapper.classList.toggle('d-none', e.target.value !== 'others');
     });
 
     function renderFields(type) {
         extraFields.innerHTML = '';
-
         if (type === 'fixed') {
             extraFields.innerHTML = `
                 <div class="mb-3">
                     <label class="form-label">Fixed Amount</label>
                     <input type="number" step="0.01" name="value" class="form-control" required>
                     <input type="hidden" name="value_type" value="fixed">
-                </div>
-            `;
+                </div>`;
         }
-
         if (type === 'percent') {
             extraFields.innerHTML = `
                 <div class="mb-3">
                     <label class="form-label">Percentage (%)</label>
                     <input type="number" step="0.01" name="value" class="form-control" required>
                     <input type="hidden" name="value_type" value="percent">
-                </div>
-            `;
+                </div>`;
         }
-
         if (type === 'bracket') {
             extraFields.innerHTML = `
                 <h5>Brackets</h5>
@@ -97,24 +86,20 @@
                         <div class="col"><input type="number" step="0.01" name="employee[]" class="form-control" placeholder="Employee" required></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBracket()">+ Add Bracket</button>
-            `;
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBracket()">+ Add Bracket</button>`;
         }
     }
 
     function addBracket() {
-        let row = `
+        document.getElementById('brackets').insertAdjacentHTML('beforeend', `
             <div class="row mb-2">
                 <div class="col"><input type="number" step="0.01" name="min_salary[]" class="form-control" placeholder="From" required></div>
                 <div class="col"><input type="number" step="0.01" name="max_salary[]" class="form-control" placeholder="To" required></div>
                 <div class="col"><input type="number" step="0.01" name="employer[]" class="form-control" placeholder="Employer" required></div>
                 <div class="col"><input type="number" step="0.01" name="employee[]" class="form-control" placeholder="Employee" required></div>
-            </div>
-        `;
-        document.getElementById('brackets').insertAdjacentHTML('beforeend', row);
+            </div>`);
     }
 
-    // Initial render
     renderFields(deductionType.value);
     deductionType.addEventListener('change', (e) => renderFields(e.target.value));
 </script>

@@ -105,8 +105,16 @@
         </div>
 
         <div class="main-content">
+        <!-- Fixed Page Header -->
+        <div class="page-header">
+            <h4>@yield('page-title')</h4>
+        </div>
+
+        <!-- Scrollable Page Body -->
+        <div class="page-body">
             @yield('content')
         </div>
+    </div>
     </div>
 
     <!-- Footer -->

@@ -1,31 +1,37 @@
 @extends('layouts.hr')
 
-@section('hr-content')
+{{-- Fixed header title --}}
+@section('page-title', 'Employee Management')
 
+@section('hr-content')
 <div class="container">
 
-    {{-- Fixed Top Bar --}}
-    <div class="fixed-top-bar" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>Employee Management</h2>
-        <form method="GET" action="{{ route('employees.index') }}" id="filterForm" style="display: flex; gap: 10px;">
-            {{-- Search Input --}}
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..." class="form-control" style="width: 230px;" onkeydown="if(event.key === 'Enter'){ this.form.submit(); }">
-        </form>
-    </div>
+    {{-- Filters + Buttons --}}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <form method="GET" action="{{ route('employees.index') }}" id="filterForm" class="d-flex align-items-center gap-2">
+            {{-- Department Dropdown --}}
+            <select class="form-select form-select-sm" name="department" style="width: 200px;" onchange="this.form.submit()">
+                <option value="">All Departments</option>
+                @foreach($departments as $department)
+                    <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>
+                        {{ $department }}
+                    </option>
+                @endforeach
+            </select>
 
-    {{-- Dropdown + Buttons --}}
-    <div class="dropdown-button-row" style="display: flex; justify-content: space-between; align-items: center;">
-        <select class="form-control" name="department" style="width: 250px;" onchange="this.form.submit()">
-            <option value="">All Departments</option>
-            @foreach($departments as $department)
-                <option value="{{ $department }}" {{ request('department') == $department ? 'selected' : '' }}>
-                    {{ $department }}
-                </option>
-            @endforeach
-        </select>
-        <div>
-            <button class="btn btn-secondary">Add Department</button>
-            <a href="{{ route('employees.create') }}" class="btn btn-primary">Add Employee</a>
+            {{-- Search Input --}}
+            <input type="text" 
+                   name="search" 
+                   value="{{ request('search') }}" 
+                   placeholder="Search..." 
+                   class="form-control form-control-sm" 
+                   style="width: 230px;" 
+                   onkeydown="if(event.key === 'Enter'){ this.form.submit(); }">
+        </form>
+
+        {{-- Buttons --}}
+        <div class="d-flex gap-2">
+            <a href="{{ route('employees.create') }}" class="btn btn-primary btn-sm">Add Employee</a>
         </div>
     </div>
 
@@ -57,7 +63,12 @@
                         <td>{{ $employee->contact }}</td>
                         <td>
                             <a href="{{ route('employees.show', $employee->id) }}" class="btn btn-sm btn-info">View</a>
-                            <a href="#" class="btn btn-sm btn-danger">Delete</a>
+
+                            <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 @empty

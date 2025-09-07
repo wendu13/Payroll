@@ -50,26 +50,10 @@ use App\Http\Controllers\DeductionTypeController;
 
     // Employees
     Route::resource('employees', EmployeeController::class);
-
     Route::prefix('employees/{employee}')->group(function () {
         Route::resource('schedules', EmployeeScheduleController::class);
         Route::resource('payslips', EmployeePayslipController::class);
         Route::resource('deductions', EmployeeDeductionController::class);
-    });
-
-    // Calendar
-    Route::resource('calendar', CalendarController::class);
-    Route::post('/calendar/reset', [CalendarController::class, 'reset'])->name('calendar.reset');
-
-    // Schedule (company-wide, not per-employee)
-    Route::resource('schedule', ScheduleController::class);
-    Route::post('/schedule/save', [ScheduleController::class, 'save'])->name('schedule.save');
-    });
-
-    // Test PDF
-    Route::get('/test-pdf', function () {
-        $pdf = PDF::loadView('test-pdf', ['name' => 'Wendy']);
-        return $pdf->download('sample.pdf');
     });
     Route::middleware(['auth.hr'])->group(function () {
         Route::prefix('employees/{employee}')->group(function () {
@@ -83,12 +67,21 @@ use App\Http\Controllers\DeductionTypeController;
                 ->name('employees.schedules.download');
         });
     });
-    
 
+    // Calendar
+    Route::resource('calendar', CalendarController::class);
+    Route::post('/calendar/reset', [CalendarController::class, 'reset'])->name('calendar.reset');
+
+    // Schedule (company-wide, not per-employee)
+    Route::resource('schedule', ScheduleController::class);
+    Route::post('/schedule/save', [ScheduleController::class, 'save'])->name('schedule.save');
+    });
+
+    
+    //Deduction
     Route::prefix('hr')->name('deductions.')->group(function () {
         Route::get('/deductions', [DeductionTypeController::class, 'index'])->name('index');
     });
-
     Route::prefix('hr')->name('deductions.')->group(function () {
         Route::get('/deductions', [DeductionTypeController::class, 'index'])->name('index');
         Route::get('/deductions/create', [DeductionTypeController::class, 'create'])->name('create');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Department;
 
 class EmployeeController extends Controller
 {
@@ -56,7 +57,7 @@ class EmployeeController extends Controller
 
         $employee->save();
 
-        return redirect()->route('hr.employees.index')->with('success', 'Employee added successfully.');
+        return redirect()->route('employees.index')->with('success', 'Employee added successfully.');
     }
 
     public function show(Employee $employee)
@@ -93,4 +94,5 @@ class EmployeeController extends Controller
         $employee->delete();
         return redirect()->route('hr.employees.index')->with('success', 'Employee deleted successfully.');
     }
+
 }

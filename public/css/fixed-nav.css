@@ -167,3 +167,22 @@ body {
     justify-content: center;
     z-index: 997;
 }
+
+
+.page-header {
+    position: sticky;
+    top: 20px;
+    left: 0;
+    right: 0;
+    background: #fff;
+    padding: 5px 15px;
+    font-weight: bold;
+    font-size: 22px;
+    border-bottom: 2px solid #b3b8bf;
+    z-index: 100;
+}
+
+.page-body {
+    padding: 15px;
+}
+

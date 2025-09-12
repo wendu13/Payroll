@@ -11,12 +11,12 @@ class Employee extends Model
 
     // Allow these fields to be mass-assigned
     protected $fillable = [
-        'employee_number',  // This field is used in your view
-        'first_name',
-        'last_name',
-        'middle_name',
-        'position',
         'department',
+        'employee_number',
+        'position',
+        'last_name',
+        'first_name',
+        'middle_name',
         'address',
         'zip_code',
         'contact',
@@ -33,14 +33,17 @@ class Employee extends Model
         'philhealth',
         'pagibig',
         'tin',
+        'workday',
+        'restday',
         'bank_name',
         'bank_account',
         'basic_rate',
+        'rate_type',   // ✅ idagdag ito
         'allowance',
         'other_pay',
         'photo',
-        // ... other fields
     ];
+    
     
     public function schedules()
     {

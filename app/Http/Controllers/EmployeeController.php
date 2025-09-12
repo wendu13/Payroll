@@ -78,16 +78,22 @@ class EmployeeController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
             'photo'      => 'nullable|image|max:2048',
+    
+            'basic_rate' => 'nullable|numeric|min:0',
+            'rate_type'  => 'required|in:monthly,daily',
+            'allowance'  => 'nullable|numeric|min:0',
+            'other_pay'  => 'nullable|numeric|min:0',
         ]);
-
+    
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('photos', 'public');
         }
-
-        $employee->update(array_merge($request->except('photo'), $validated));
-
-        return redirect()->route('hr.employees.index')->with('success', 'Employee updated successfully.');
-    }
+    
+        $employee->update($validated);
+    
+        return redirect()->route('employees.show', $employee->id)
+                         ->with('success', 'Employee updated successfully');
+    }    
 
     public function destroy(Employee $employee)
     {

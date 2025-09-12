@@ -141,15 +141,21 @@
                         </div>
 
                         {{-- Row 9: Financial Info --}}
-                        <div class="col-md-4">
-                            <label class="form-label small">Basic Rate (Monthly)</label>
-                            <input type="number" name="basic_rate" class="form-control form-control-sm" step="0.01" min="0">
+                        <div class="col-md-6">
+                            <label class="form-label small">Basic Rate</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="basic_rate" class="form-control form-control-sm" step="0.01" min="0" required>
+                                <select name="rate_type" class="form-select form-select-sm" style="max-width:120px;" required>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small">Allowance</label>
                             <input type="number" name="allowance" class="form-control form-control-sm" step="0.01" min="0">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small">Other Pay</label>
                             <input type="number" name="other_pay" class="form-control form-control-sm" step="0.01" min="0">
                         </div>

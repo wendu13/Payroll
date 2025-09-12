@@ -9,7 +9,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeScheduleController;
-use App\Http\Controllers\DeductionTypeController;
+use App\Http\Controllers\DeductionSettingController;
 
     // ======================
     // AUTH ROUTES
@@ -78,15 +78,27 @@ use App\Http\Controllers\DeductionTypeController;
     });
 
     
-    //Deduction
-    Route::prefix('hr')->name('deductions.')->group(function () {
-        Route::get('/deductions', [DeductionTypeController::class, 'index'])->name('index');
+    // Deduction routes
+    Route::resource('deductions', DeductionSettingController::class)->only(['index', 'update']);
+    // Late & Absences
+    Route::post('deductions/late/save', [DeductionSettingController::class, 'saveLateAbsence'])
+        ->name('deductions.late.save');
+    // SSS Brackets
+    Route::prefix('deductions/sss')->group(function () {
+        // Save new bracket
+        Route::post('/', [DeductionSettingController::class, 'storeSSS'])->name('deductions.sss.store');
+        // Update existing bracket
+        Route::put('/{id}', [DeductionSettingController::class, 'updateSSS'])->name('deductions.sss.update');
+        // Delete bracket
+        Route::delete('/{id}', [DeductionSettingController::class, 'destroySSS'])->name('deductions.sss.destroy');
     });
-    Route::prefix('hr')->name('deductions.')->group(function () {
-        Route::get('/deductions', [DeductionTypeController::class, 'index'])->name('index');
-        Route::get('/deductions/create', [DeductionTypeController::class, 'create'])->name('create');
-        Route::post('/deductions', [DeductionTypeController::class, 'store'])->name('store');
-    });
+
+
+    
+
+
+
+    
 
     
 

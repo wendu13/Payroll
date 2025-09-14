@@ -60,6 +60,31 @@ class Employee extends Model
         $middle = $this->middle_name ? ' ' . $this->middle_name : '';
         return "{$this->last_name}, {$this->first_name}{$middle}";
     }
+
+    // Add deductions relationship
+    public function deductions()
+    {
+        return $this->hasMany(EmployeeDeduction::class);
+    }
+
+    // Get active deductions
+    public function activeDeductions()
+    {
+        return $this->hasMany(EmployeeDeduction::class)->where('is_active', true);
+    }
+
+    // Get deductions for specific cut off
+    public function deductionsForCutOff($cutOff)
+    {
+        return $this->activeDeductions()->where('cut_off', $cutOff);
+    }
+
+    // Get total active deductions amount per cut off
+    public function getTotalDeductionAmountForCutOff($cutOff)
+    {
+        return $this->deductionsForCutOff($cutOff)->sum('per_payment_amount');
+    }
+
 }
 
 

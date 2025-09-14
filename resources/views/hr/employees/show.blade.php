@@ -18,10 +18,10 @@
             <a class="nav-link" data-bs-toggle="tab" href="#schedule">Schedules</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#payslip">Payslips</a>
+            <a class="nav-link" data-bs-toggle="tab" href="#deductions">Deductions</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#deductions">Deductions</a>
+            <a class="nav-link" data-bs-toggle="tab" href="#payslip">Payslips</a>
         </li>
     </ul>
 
@@ -31,6 +31,9 @@
 
         {{-- Schedule --}}
         @include('hr.employees.partials.schedule')
+
+        {{--Deduction --}}
+        @include('hr.employees.partials.deduction')
 
         {{-- Payslip --}}
         @include('hr.employees.partials.payslip')

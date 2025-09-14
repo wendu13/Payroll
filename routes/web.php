@@ -9,6 +9,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeScheduleController;
+use App\Http\Controllers\EmployeeDeductionController;
 use App\Http\Controllers\DeductionSettingController;
 use App\Http\Controllers\SSSController;
 use App\Http\Controllers\TaxController;
@@ -31,24 +32,41 @@ Route::middleware(['auth.hr'])->group(function () {
     // HR Dashboard
     Route::get('/hr/dashboard', [HrController::class, 'dashboard'])->name('hr.dashboard');
 
-    // Employees
-    Route::resource('employees', EmployeeController::class);
-    Route::prefix('employees/{employee}')->group(function () {
-        Route::resource('schedules', EmployeeScheduleController::class);
-        // Route::resource('payslips', EmployeePayslipController::class); // Comment out
-        // Route::resource('deductions', EmployeeDeductionController::class); // Comment out
-    });
-    
-    Route::prefix('employees/{employee}')->group(function () {
-        Route::post('/schedules', [EmployeeScheduleController::class, 'store'])
-            ->name('employees.schedules.store');
+// -----------------------------
+// Employees Main Resource
+// -----------------------------
+Route::resource('employees', EmployeeController::class);
 
+    // -----------------------------
+    // Employee Schedules (nested)
+    // -----------------------------
+    Route::prefix('employees/{employee}')->group(function () {
+        // schedules resource (if you want full CRUD)
+        Route::resource('schedules', EmployeeScheduleController::class);
+
+        // extra schedule routes
+        Route::post('schedules', [EmployeeScheduleController::class, 'store'])
+            ->name('employees.schedules.store');
         Route::get('schedules/view/{file}', [EmployeeScheduleController::class, 'viewSchedule'])
             ->name('employees.schedules.view');
-
         Route::get('schedules/download/{id}', [EmployeeScheduleController::class, 'download'])
             ->name('employees.schedules.download');
     });
+
+
+    // Employee Deductions (nested)
+    Route::resource('employees.deductions', EmployeeDeductionController::class)->only([
+        'index', 'store', 'show', 'edit', 'update', 'destroy'
+    ]);
+
+    // Extra actions
+    Route::patch('employees/{employee}/deductions/{deduction}/process-payment', [EmployeeDeductionController::class, 'processPayment'])
+        ->name('employees.deductions.process-payment');
+
+    Route::patch('employees/{employee}/deductions/{deduction}/toggle-status', [EmployeeDeductionController::class, 'toggleStatus'])
+        ->name('employees.deductions.toggle-status');
+
+
 
     // Calendar
     Route::resource('calendar', CalendarController::class);

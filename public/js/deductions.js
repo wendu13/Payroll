@@ -1,3 +1,4 @@
+// Late and Absences
 document.addEventListener('DOMContentLoaded', function() {
     const daysInput = document.getElementById('daysInput');
     const rateTypeSelect = document.getElementById('rateTypeSelect');
@@ -91,74 +92,399 @@ document.addEventListener('DOMContentLoaded', function() {
         perMinuteSpan.textContent = perMinute.toFixed(2);
     }
 
-    daysInput.addEventListener('input', updateSample);
-    rateTypeSelect.addEventListener('change', updateSample);
-    rateInput.addEventListener('input', updateSample);
+    if (daysInput) daysInput.addEventListener('input', updateSample);
+    if (rateTypeSelect) rateTypeSelect.addEventListener('change', updateSample);
+    if (rateInput) rateInput.addEventListener('input', updateSample);
 
-    updateSample(); // initialize
+    if (daysInput) updateSample(); // initialize
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const savedBrackets = document.getElementById('savedBrackets');
-    const newBrackets = document.getElementById('newBrackets');
-    const addButton = document.getElementById('addBracket');
+// SSS Brackets functionality
+document.addEventListener('DOMContentLoaded', function () {
+    const tableBody = document.getElementById('sssBrackets');
+    const addBtn = document.getElementById('addSSSBracket');
 
-    function updateTotal(row) {
-        const er = parseFloat(row.querySelector('.erInput')?.value) || 0;
-        const ee = parseFloat(row.querySelector('.eeInput')?.value) || 0;
-        row.querySelector('.totalInput').value = (er + ee).toFixed(2);
+    const editBtn = document.getElementById('editSSSBtn');
+    const cancelBtn = document.getElementById('cancelSSSBtn');
+    const saveBtn = document.getElementById('saveSSSBtn');
+    const closeBtn = document.getElementById('closeSSSBtn');
+
+    // Switch to read-only mode by default
+    function setReadOnlyMode() {
+        tableBody.querySelectorAll('input:not([type="hidden"])').forEach(input => {
+            input.setAttribute('readonly', true);
+            input.classList.add('bg-light');
+        });
+        tableBody.querySelectorAll('.removeBracket').forEach(btn => btn.classList.add('d-none'));
+        addBtn.classList.add('d-none');
+
+        editBtn.classList.remove('d-none');
+        cancelBtn.classList.add('d-none');
+        saveBtn.classList.add('d-none');
+        closeBtn.classList.remove('d-none');
     }
 
-    // Auto compute total for both saved and new rows
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('erInput') || e.target.classList.contains('eeInput')) {
-            const row = e.target.closest('tr');
-            updateTotal(row);
+    // Switch to edit mode
+    function setEditMode() {
+        tableBody.querySelectorAll('input:not([type="hidden"]):not([readonly])').forEach(input => {
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-light');
+        });
+        // Keep total field readonly
+        tableBody.querySelectorAll('input[name*="[total]"]').forEach(input => {
+            input.setAttribute('readonly', true);
+            input.classList.add('bg-light');
+        });
+        
+        tableBody.querySelectorAll('.removeBracket').forEach(btn => btn.classList.remove('d-none'));
+        addBtn.classList.remove('d-none');
+
+        editBtn.classList.add('d-none');
+        cancelBtn.classList.remove('d-none');
+        saveBtn.classList.remove('d-none');
+        closeBtn.classList.add('d-none');
+    }
+
+    // Compute Total (EE + ER)
+    function computeTotal(row) {
+        const er = parseFloat(row.querySelector('input[name*="[er]"]').value) || 0;
+        const ee = parseFloat(row.querySelector('input[name*="[ee]"]').value) || 0;
+        row.querySelector('input[name*="[total]"]').value = (er + ee).toFixed(2);
+    }
+
+    // Attach listeners for auto-compute
+    function attachComputeListeners(row) {
+        const erInput = row.querySelector('input[name*="[er]"]');
+        const eeInput = row.querySelector('input[name*="[ee]"]');
+
+        if (erInput && eeInput) {
+            erInput.addEventListener('input', () => computeTotal(row));
+            eeInput.addEventListener('input', () => computeTotal(row));
+        }
+    }
+
+    // Add new row
+    addBtn?.addEventListener('click', function () {
+        const index = tableBody.querySelectorAll('tr').length;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="number" step="0.01" name="brackets[${index}][from]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][to]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][er]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][ee]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][total]" class="form-control" required readonly></td>
+            <td><input type="text" name="brackets[${index}][others]" class="form-control"></td>
+            <td><button type="button" class="btn btn-danger btn-sm removeBracket">Remove</button></td>
+        `;
+        tableBody.appendChild(row);
+        attachComputeListeners(row);
+    });
+
+    // Remove row
+    tableBody?.addEventListener('click', function (e) {
+        if (e.target.classList.contains('removeBracket')) {
+            e.target.closest('tr').remove();
+            // Reindex remaining rows
+            reindexRows();
         }
     });
 
-    // Add new bracket row
-    addButton.addEventListener('click', function() {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><input type="number" name="from" class="form-control fromInput" required></td>
-            <td><input type="number" name="to" class="form-control toInput" required></td>
-            <td><input type="number" name="er" class="form-control erInput" required></td>
-            <td><input type="number" name="ee" class="form-control eeInput" required></td>
-            <td><input type="number" class="form-control totalInput" readonly></td>
-            <td><input type="text" name="others" class="form-control othersInput"></td>
-            <td>
-                <form method="POST" action="/deductions/sss" class="d-inline">
-                    <input type="hidden" name="_token" value="${window.csrfToken}">
-                    <button type="submit" class="btn btn-success btn-sm">Save</button>
-                </form>
-                <button type="button" class="btn btn-danger btn-sm removeRow">Remove</button>
-            </td>
-        `;
-        newBrackets.appendChild(row);
+    // Reindex rows after removal
+    function reindexRows() {
+        tableBody.querySelectorAll('tr').forEach((row, index) => {
+            // Update all input names with new index
+            row.querySelectorAll('input').forEach(input => {
+                const name = input.getAttribute('name');
+                if (name) {
+                    const newName = name.replace(/brackets\[\d+\]/, `brackets[${index}]`);
+                    input.setAttribute('name', newName);
+                }
+            });
+        });
+    }
+
+    // Attach compute listeners to existing rows
+    tableBody.querySelectorAll('tr').forEach(row => attachComputeListeners(row));
+
+    // Button events
+    editBtn?.addEventListener('click', setEditMode);
+    cancelBtn?.addEventListener('click', setReadOnlyMode);
+
+    // Init mode
+    setReadOnlyMode();
+});
+
+// PHIC Contribution functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const phicRateInput = document.getElementById('phicRateInput');
+    const phicMinInput = document.getElementById('phicMinInput');
+    const phicMaxInput = document.getElementById('phicMaxInput');
+    const phicSampleSalary = document.getElementById('phicSampleSalary');
+    const phicTotalPremium = document.getElementById('phicTotalPremium');
+    const phicEmployerShare = document.getElementById('phicEmployerShare');
+    const phicEmployeeShare = document.getElementById('phicEmployeeShare');
+    const phicComputationNote = document.getElementById('phicComputationNote');
+    
+    // PHIC Mode elements
+    const phicViewMode = document.getElementById('phicViewMode');
+    const phicEditMode = document.getElementById('phicEditMode');
+    const phicViewModeButtons = document.getElementById('phicViewModeButtons');
+    const phicEditModeButtons = document.getElementById('phicEditModeButtons');
+    const phicViewRate = document.getElementById('phicViewRate');
+    const phicViewMin = document.getElementById('phicViewMin');
+    const phicViewMax = document.getElementById('phicViewMax');
+    const phicEditButton = document.getElementById('phicEditButton');
+    const phicCancelEditButton = document.getElementById('phicCancelEditButton');
+    
+    if (!phicRateInput) return; // Exit if PHIC elements don't exist on this page
+    
+    // Get data from data attributes
+    const phicModal = document.getElementById('phicModal');
+    const savedRate = phicModal.getAttribute('data-saved-rate');
+    const savedMin = phicModal.getAttribute('data-saved-min');
+    const savedMax = phicModal.getAttribute('data-saved-max');
+    const phicHasSavedData = savedRate !== '' && parseFloat(savedRate) > 0;
+    
+    let phicOriginalValues = {
+        rate: phicRateInput.value,
+        min_salary: phicMinInput.value,
+        max_salary: phicMaxInput.value
+    };
+    
+    function showPhicViewMode() {
+        phicViewMode.style.display = 'block';
+        phicEditMode.style.display = 'none';
+        phicViewModeButtons.style.display = 'block';
+        phicEditModeButtons.style.display = 'none';
+        phicViewRate.textContent = phicRateInput.value + '%';
+        phicViewMin.textContent = '₱' + parseFloat(phicMinInput.value).toLocaleString('en-US', {minimumFractionDigits: 2});
+        phicViewMax.textContent = '₱' + parseFloat(phicMaxInput.value).toLocaleString('en-US', {minimumFractionDigits: 2});
+    }
+    
+    function showPhicEditMode() {
+        phicViewMode.style.display = 'none';
+        phicEditMode.style.display = 'block';
+        phicViewModeButtons.style.display = 'none';
+        phicEditModeButtons.style.display = 'block';
+        phicOriginalValues = {
+            rate: phicRateInput.value,
+            min_salary: phicMinInput.value,
+            max_salary: phicMaxInput.value
+        };
+        updatePhicSample();
+    }
+    
+    // Initialize PHIC modal based on saved data
+    if (phicHasSavedData) {
+        showPhicViewMode();
+    } else {
+        showPhicEditMode();
+    }
+    
+    // PHIC Edit button click
+    if (phicEditButton) {
+        phicEditButton.addEventListener('click', function() {
+            showPhicEditMode();
+        });
+    }
+    
+    // PHIC Cancel edit button click
+    if (phicCancelEditButton) {
+        phicCancelEditButton.addEventListener('click', function() {
+            phicRateInput.value = phicOriginalValues.rate;
+            phicMinInput.value = phicOriginalValues.min_salary;
+            phicMaxInput.value = phicOriginalValues.max_salary;
+            if (phicHasSavedData) {
+                showPhicViewMode();
+            } else {
+                // If no saved data, close modal instead
+                const modal = bootstrap.Modal.getInstance(document.getElementById('phicModal'));
+                if (modal) modal.hide();
+            }
+        });
+    }
+
+    function updatePhicSample() {
+        const rate = parseFloat(phicRateInput.value) || 0;
+        const minSalary = parseFloat(phicMinInput.value) || 0;
+        const maxSalary = parseFloat(phicMaxInput.value) || 0;
+        const sampleSalary = parseFloat(phicSampleSalary.value) || 0;
+
+        let totalPremium = 0;
+        let computationNote = '';
+
+        if (sampleSalary <= minSalary) {
+            totalPremium = (minSalary * rate) / 100;
+            computationNote = `Salary ≤ ₱${minSalary.toLocaleString()}, using minimum salary for computation.`;
+        } else if (sampleSalary >= maxSalary) {
+            totalPremium = (maxSalary * rate) / 100;
+            computationNote = `Salary ≥ ₱${maxSalary.toLocaleString()}, using maximum salary for computation.`;
+        } else {
+            totalPremium = (sampleSalary * rate) / 100;
+            computationNote = `₱${sampleSalary.toLocaleString()} × ${rate}% = ₱${totalPremium.toFixed(2)}`;
+        }
+
+        const employerShare = totalPremium / 2;
+        const employeeShare = totalPremium / 2;
+
+        phicTotalPremium.textContent = totalPremium.toFixed(2);
+        phicEmployerShare.textContent = employerShare.toFixed(2);
+        phicEmployeeShare.textContent = employeeShare.toFixed(2);
+        phicComputationNote.textContent = computationNote;
+    }
+
+    // Add event listeners for PHIC inputs
+    if (phicRateInput) phicRateInput.addEventListener('input', updatePhicSample);
+    if (phicMinInput) phicMinInput.addEventListener('input', updatePhicSample);
+    if (phicMaxInput) phicMaxInput.addEventListener('input', updatePhicSample);
+    if (phicSampleSalary) phicSampleSalary.addEventListener('input', updatePhicSample);
+
+    // Initialize PHIC sample computation
+    if (phicRateInput) updatePhicSample();
+});
+
+// HDMF Contribution functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const hdmfModal = document.getElementById('hdmfModal');
+    const viewMode = document.getElementById('hdmfViewMode');
+    const editMode = document.getElementById('hdmfEditMode');
+    const viewButtons = document.getElementById('hdmfViewButtons');
+    const editButtons = document.getElementById('hdmfEditButtons');
+
+    const viewEmployee = document.getElementById('viewEmployee');
+    const viewEmployer = document.getElementById('viewEmployer');
+    const hdmfEmployee = document.getElementById('hdmfEmployee');
+    const hdmfEmployer = document.getElementById('hdmfEmployer');
+
+    const editButton = document.getElementById('hdmfEditButton');
+    const cancelButton = document.getElementById('hdmfCancelButton');
+
+    hdmfModal.addEventListener('show.bs.modal', function() {
+        const employee = hdmfModal.getAttribute('data-employee');
+        const employer = hdmfModal.getAttribute('data-employer');
+
+        hdmfEmployee.value = employee || 200;
+        hdmfEmployer.value = employer || 200;
+
+        if (employee && employer) {
+            // Show view mode
+            viewEmployee.textContent = employee;
+            viewEmployer.textContent = employer;
+            viewMode.style.display = 'block';
+            viewButtons.style.display = 'block';
+            editMode.style.display = 'none';
+            editButtons.style.display = 'none';
+        } else {
+            // Show edit mode
+            viewMode.style.display = 'none';
+            viewButtons.style.display = 'none';
+            editMode.style.display = 'block';
+            editButtons.style.display = 'block';
+        }
     });
 
-    // Remove new bracket row
-    newBrackets.addEventListener('click', function(e) {
-        if (e.target.classList.contains('removeRow')) {
+    // Switch to edit mode
+    editButton.addEventListener('click', function() {
+        viewMode.style.display = 'none';
+        viewButtons.style.display = 'none';
+        editMode.style.display = 'block';
+        editButtons.style.display = 'block';
+    });
+
+    // Cancel edit
+    cancelButton.addEventListener('click', function() {
+        const employee = hdmfModal.getAttribute('data-employee') || 200;
+        const employer = hdmfModal.getAttribute('data-employer') || 200;
+
+        hdmfEmployee.value = employee;
+        hdmfEmployer.value = employer;
+
+        if (employee && employer) {
+            viewEmployee.textContent = employee;
+            viewEmployer.textContent = employer;
+            viewMode.style.display = 'block';
+            viewButtons.style.display = 'block';
+            editMode.style.display = 'none';
+            editButtons.style.display = 'none';
+        } else {
+            // Close modal if nothing saved yet
+            bootstrap.Modal.getInstance(hdmfModal).hide();
+        }
+    });
+});
+
+// Income TAX functionality
+document.addEventListener('DOMContentLoaded', function () {
+    const taxForm = document.getElementById('taxForm');
+    const tableBody = document.getElementById('taxBrackets');
+    const addBtn = document.getElementById('addTaxBracket');
+
+    const editBtn = document.getElementById('editTaxBtn');
+    const cancelBtn = document.getElementById('cancelTaxBtn');
+    const saveBtn = document.getElementById('saveTaxBtn');
+    const closeBtn = document.getElementById('closeTaxBtn');
+
+    // Switch to read-only by default
+    function setReadOnlyMode() {
+        tableBody.querySelectorAll('input').forEach(input => {
+            input.setAttribute('readonly', true);
+            input.classList.add('bg-light');
+        });
+        tableBody.querySelectorAll('.removeBracket').forEach(btn => btn.classList.add('d-none'));
+        addBtn.classList.add('d-none');
+
+        editBtn.classList.remove('d-none');
+        cancelBtn.classList.add('d-none');
+        saveBtn.classList.add('d-none');
+        closeBtn.classList.remove('d-none');
+    }
+
+    // Switch to edit mode
+    function setEditMode() {
+        tableBody.querySelectorAll('input').forEach(input => {
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-light');
+        });
+        tableBody.querySelectorAll('.removeBracket').forEach(btn => btn.classList.remove('d-none'));
+        addBtn.classList.remove('d-none');
+
+        editBtn.classList.add('d-none');
+        cancelBtn.classList.remove('d-none');
+        saveBtn.classList.remove('d-none');
+        closeBtn.classList.add('d-none');
+    }
+
+    // Add row
+    addBtn?.addEventListener('click', function () {
+        const index = tableBody.querySelectorAll('tr').length;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="number" step="0.01" name="brackets[${index}][from]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][to]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][percentage]" class="form-control" required></td>
+            <td><input type="number" step="0.01" name="brackets[${index}][fixed_amount]" class="form-control"></td>
+            <td><button type="button" class="btn btn-danger btn-sm removeBracket">Remove</button></td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    // Remove row
+    tableBody?.addEventListener('click', function (e) {
+        if (e.target.classList.contains('removeBracket')) {
             e.target.closest('tr').remove();
         }
     });
 
-    // Edit saved bracket row
-    savedBrackets.addEventListener('click', function(e) {
-        if (e.target.classList.contains('editRow')) {
-            const row = e.target.closest('tr');
-            row.querySelectorAll('input').forEach(input => {
-                if (!input.classList.contains('totalInput')) input.removeAttribute('readonly');
-            });
-            e.target.classList.add('d-none'); // hide Edit
-            row.querySelector('.saveRow').classList.remove('d-none'); // show Save
-        }
-    });
+    // Events
+    editBtn?.addEventListener('click', setEditMode);
+    cancelBtn?.addEventListener('click', setReadOnlyMode);
+
+    // Init
+    setReadOnlyMode();
 });
 
-window.csrfToken = '{{ csrf_token() }}';
+
+
 
 
 

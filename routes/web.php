@@ -80,18 +80,24 @@ use App\Http\Controllers\DeductionSettingController;
     
     // Deduction routes
     Route::resource('deductions', DeductionSettingController::class)->only(['index', 'update']);
+    
     // Late & Absences
     Route::post('deductions/late/save', [DeductionSettingController::class, 'saveLateAbsence'])
         ->name('deductions.late.save');
+
     // SSS Brackets
-    Route::prefix('deductions/sss')->group(function () {
-        // Save new bracket
-        Route::post('/', [DeductionSettingController::class, 'storeSSS'])->name('deductions.sss.store');
-        // Update existing bracket
-        Route::put('/{id}', [DeductionSettingController::class, 'updateSSS'])->name('deductions.sss.update');
-        // Delete bracket
-        Route::delete('/{id}', [DeductionSettingController::class, 'destroySSS'])->name('deductions.sss.destroy');
+    Route::prefix('deductions')->group(function () {
+        Route::post('sss', [DeductionSettingController::class, 'storeSSS'])->name('deductions.sss.store');
+        Route::put('sss', [DeductionSettingController::class, 'updateSSS'])->name('deductions.sss.update');
+        Route::delete('sss/{id}', [DeductionSettingController::class, 'destroySSS'])->name('deductions.sss.destroy');
     });
+    
+
+    // HDMF Contribution
+    Route::put('/deductions/hdmf', [DeductionSettingController::class, 'updateHdmf'])->name('deductions.hdmf.update');
+
+    
+
 
 
     

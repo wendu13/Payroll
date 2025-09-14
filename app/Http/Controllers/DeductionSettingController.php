@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DeductionSetting;
 use Illuminate\Http\Request;
 use App\Models\SSSBracket;
-
+use App\Models\TaxBracket;
 
 class DeductionSettingController extends Controller
 {
@@ -20,18 +20,37 @@ class DeductionSettingController extends Controller
             $lateAbsence->save();
         }
         $lateAbsence->settings = json_decode($lateAbsence->settings, true);
+
+        // Loan and Advances
+        $loanAdvances = DeductionSetting::where('deduction_type', 'loan_advances')->first();
+        if (!$loanAdvances) {
+            $loanAdvances = new DeductionSetting();
+            $loanAdvances->deduction_type = 'loan_advances';
+            $loanAdvances->settings = json_encode([]);
+            $loanAdvances->save();
+        }
+        $loanAdvances->settings = json_decode($loanAdvances->settings, true);
     
-        // SSS
+        // SSS - separate table
         $sssBrackets = SSSBracket::orderBy('to')->get();
     
         // PHIC
         $phicSetting = DeductionSetting::where('deduction_type', 'phic')->first();
+
         if (!$phicSetting) {
             $phicSetting = new DeductionSetting();
             $phicSetting->deduction_type = 'phic';
-            $phicSetting->settings = json_encode(['rate' => 0, 'min_salary' => 0, 'max_salary' => 0]);
+            $phicSetting->settings = json_encode([
+                'rate' => 0,
+                'min_salary' => 0,
+                'max_salary' => 0,
+                'employer_share' => 0,
+                'employee_share' => 0,
+            ]);
             $phicSetting->save();
         }
+
+        // decode JSON to array for easy access in blade
         $phicSetting->settings = json_decode($phicSetting->settings, true);
     
         // HDMF
@@ -39,7 +58,10 @@ class DeductionSettingController extends Controller
         if (!$hdmfSetting) {
             $hdmfSetting = new DeductionSetting();
             $hdmfSetting->deduction_type = 'hdmf';
-            $hdmfSetting->settings = json_encode(['employee' => 200, 'employer' => 200]);
+            $hdmfSetting->settings = json_encode([
+                'employee' => 0,
+                'employer' => 0,
+            ]);
             $hdmfSetting->save();
         }
         $hdmfSetting->settings = json_decode($hdmfSetting->settings, true);
@@ -63,38 +85,23 @@ class DeductionSettingController extends Controller
             $hdmfLoanSetting->save();
         }
         $hdmfLoanSetting->settings = json_decode($hdmfLoanSetting->settings, true);
-    
-        // Income Tax
-        $taxSetting = DeductionSetting::where('deduction_type', 'income_tax')->first();
-        if (!$taxSetting) {
-            $taxSetting = new DeductionSetting();
-            $taxSetting->deduction_type = 'income_tax';
-            $taxSetting->settings = json_encode([
-                'brackets' => [
-                    ['from'=>0, 'to'=>250000, 'base'=>0, 'rate'=>0],
-                    ['from'=>250001, 'to'=>400000, 'base'=>0, 'rate'=>15],
-                    ['from'=>400001, 'to'=>800000, 'base'=>22500, 'rate'=>20],
-                    ['from'=>800001, 'to'=>2000000, 'base'=>102500, 'rate'=>25],
-                    ['from'=>2000001, 'to'=>8000000, 'base'=>402500, 'rate'=>30],
-                    ['from'=>8000001, 'to'=>PHP_INT_MAX, 'base'=>2202500, 'rate'=>35],
-                ]
-            ]);
-            $taxSetting->save();
-        }
-        $taxBrackets = \App\Models\TaxBracket::all();
+
+        // Tax - separate table (no deduction_settings entry)
+        $taxBrackets = TaxBracket::orderBy('from')->get();
 
         return view('hr.deductions.index', compact(
             'lateAbsence',
+            'loanAdvances',
             'sssBrackets',
             'phicSetting',
             'hdmfSetting',
             'sssLoanSetting',
             'hdmfLoanSetting',
-            'taxBrackets',
-            'taxSetting'
+            'taxBrackets'
         ));
     }
 
+    // update method remains the same (no tax handling)
     public function update(Request $request, DeductionSetting $deduction)
     {
         if ($deduction->deduction_type === 'late_absences') {
@@ -113,144 +120,45 @@ class DeductionSettingController extends Controller
             $request->validate([
                 'rate' => 'required|numeric|min:0|max:100',
                 'min_salary' => 'required|numeric|min:0',
-                'max_salary' => 'required|numeric|min:0|gte:min_salary'
+                'max_salary' => 'required|numeric|min:0|gte:min_salary',
+                'employer_share' => 'required|numeric|min:0|max:100',
+                'employee_share' => 'required|numeric|min:0|max:100',
             ]);
-    
+        
+            // optional: check na employer + employee = 100%
+            if (($request->employer_share + $request->employee_share) !== 100) {
+                return back()->withErrors([
+                    'employer_share' => 'Employer + Employee share must equal 100%',
+                    'employee_share' => 'Employer + Employee share must equal 100%',
+                ]);
+            }
+        
             $deduction->settings = json_encode([
                 'rate' => $request->rate,
                 'min_salary' => $request->min_salary,
-                'max_salary' => $request->max_salary
+                'max_salary' => $request->max_salary,
+                'employer_share' => $request->employer_share,
+                'employee_share' => $request->employee_share,
             ]);
-    
+        
             $deduction->save();
-            $message = 'PHIC Contribution updated.';
+            $message = 'PHIC Contribution updated.';     
     
         } elseif ($deduction->deduction_type === 'hdmf') {
             $request->validate([
                 'employee' => 'required|numeric|min:0',
                 'employer' => 'required|numeric|min:0',
             ]);
-    
+        
             $deduction->settings = json_encode([
                 'employee' => $request->employee,
                 'employer' => $request->employer,
             ]);
-    
+        
             $deduction->save();
             $message = 'HDMF Contribution updated.';
-    
-        } elseif ($deduction->deduction_type === 'income_tax') {
-            $brackets = $request->input('brackets', []);
-    
-            // Clear old tax brackets
-            \App\Models\TaxBracket::truncate();
-    
-            foreach ($brackets as $b) {
-                \App\Models\TaxBracket::create([
-                    'from' => floatval($b['from']),
-                    'to' => floatval($b['to']),
-                    'percentage' => floatval($b['percentage']),
-                    'fixed_amount' => floatval($b['fixed_amount']),
-                ]);
-            }
-    
-            // ⚠️ Huwag nang $deduction->save()
-            $message = 'Tax successfully updated!';
-        }
+        }        
     
         return redirect()->route('deductions.index')->with('success', $message);
     }
-    
-    public function storeSSS(Request $request)
-    {
-        $validated = $request->validate([
-            'from' => 'required|numeric|min:0',
-            'to' => 'required|numeric|min:0|gte:from',
-            'er' => 'required|numeric|min:0',
-            'ee' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'others' => 'nullable|string|max:255'
-        ]);
-    
-        SSSBracket::create($validated);
-    
-        return redirect()->route('deductions.index')
-                         ->with('success', 'SSS bracket created successfully');
-    }  
-    
-    public function updateSSS(Request $request)
-    {
-        $validated = $request->validate([
-            'brackets' => 'required|array',
-            'brackets.*.id' => 'nullable|exists:sss_brackets,id', // Optional kung may id
-            'brackets.*.from' => 'required|numeric|min:0',
-            'brackets.*.to' => 'required|numeric|min:0|gte:brackets.*.from',
-            'brackets.*.er' => 'required|numeric|min:0',
-            'brackets.*.ee' => 'required|numeric|min:0',
-            'brackets.*.total' => 'required|numeric|min:0',
-            'brackets.*.others' => 'nullable|string|max:255',
-        ]);
-    
-        try {
-            foreach ($validated['brackets'] as $bracketData) {
-                if (!empty($bracketData['id'])) {
-                    // Update existing record
-                    $bracket = SSSBracket::findOrFail($bracketData['id']);
-                    $bracket->update([
-                        'from'   => $bracketData['from'],
-                        'to'     => $bracketData['to'],
-                        'er'     => $bracketData['er'],
-                        'ee'     => $bracketData['ee'],
-                        'total'  => $bracketData['total'],
-                        'others' => $bracketData['others'] ?? null,
-                    ]);
-                } else {
-                    // Create new record
-                    SSSBracket::create([
-                        'from'   => $bracketData['from'],
-                        'to'     => $bracketData['to'],
-                        'er'     => $bracketData['er'],
-                        'ee'     => $bracketData['ee'],
-                        'total'  => $bracketData['total'],
-                        'others' => $bracketData['others'] ?? null,
-                    ]);
-                }
-            }
-    
-            return redirect()
-                ->route('deductions.index')
-                ->with('success', 'SSS brackets updated successfully');
-        } catch (\Exception $e) {
-            \Log::error('Error updating SSS brackets: ' . $e->getMessage());
-    
-            return redirect()
-                ->back()
-                ->with('error', 'Failed to update SSS brackets')
-                ->withInput();
-        }
-    }
-    
-    public function destroySSS(Request $request, $id)
-    {
-        try {
-            $sssBracket = SSSBracket::findOrFail($id); // Replace with your actual model
-            $sssBracket->delete();
-
-            if ($request->ajax()) {
-                return response()->json(['success' => true, 'message' => 'SSS bracket deleted successfully']);
-            }
-
-            return redirect()->back()->with('success', 'SSS bracket deleted successfully');
-            
-        } catch (\Exception $e) {
-            \Log::error('Error deleting SSS bracket: ' . $e->getMessage());
-            
-            if ($request->ajax()) {
-                return response()->json(['error' => 'Failed to delete SSS bracket'], 500);
-            }
-            
-            return redirect()->back()->with('error', 'Failed to delete SSS bracket');
-        }
-    }
-    
 }

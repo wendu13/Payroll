@@ -17,10 +17,11 @@
             <td>Late and Absences</td>
             <td>{{ $lateAbsence?->updated_at?->format('M. d, Y h:i A') ?? 'Not yet set' }}</td>
         </tr>
+
         <!-- Loans and Advances -->
-        <tr data-bs-toggle="modal" data-bs-target="#loansModal" style="cursor:pointer;">
+        <tr data-bs-toggle="modal" data-bs-target="#loanAdvancesModal" style="cursor:pointer;">
             <td>Loans and Advances</td>
-            <td>Not yet set</td>
+            <td>{{ $loanAdvances?->updated_at?->format('M. d, Y h:i A') ?? 'Not yet set' }}</td>
         </tr>
 
         <!-- SSS Contribution -->
@@ -60,7 +61,11 @@
         <!-- Income Tax -->
         <tr data-bs-toggle="modal" data-bs-target="#taxModal" style="cursor:pointer;">
             <td>Income Tax</td>
-            <td>{{ $taxSetting?->updated_at?->format('M. d, Y h:i A') ?? 'Not yet set' }}</td>
+            <td>
+                {{ $taxBrackets && count($taxBrackets) > 0 
+                    ? $taxBrackets->last()->updated_at->format('M. d, Y h:i A') 
+                    : 'Not yet set' }}
+            </td>
         </tr>
 
     </tbody>
@@ -143,7 +148,7 @@
 </div>
 
 <!-- Loans and Advances Modal -->
-<div class="modal fade" id="loansModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="loanAdvancesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -169,7 +174,7 @@
 <!-- SSS Contribution Modal -->
 <div class="modal fade" id="sssModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
-        <form method="POST" action="{{ route('deductions.sss.update') }}" id="sssForm">
+        <form method="POST" action="{{ route('sss.update') }}" id="sssForm">
             @csrf
             @method('PUT')
 
@@ -236,7 +241,6 @@
                     <h5 class="modal-title">Setup: PHIC Contribution</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-
                 <div class="modal-body">
                     <!-- VIEW MODE -->
                     <div id="phicViewMode" style="display: none;">
@@ -261,42 +265,45 @@
                             <p class="form-control-plaintext">50%</p>
                         </div>
                     </div>
-
                     <!-- EDIT MODE -->
                     <div id="phicEditMode">
                         <!-- Premium Rate -->
                         <div class="mb-3">
                             <label class="form-label">Premium Rate (%)</label>
                             <input type="number" step="0.01" name="rate" id="phicRateInput"
-                                   value="{{ $phicSetting->settings['rate'] ?? 5 }}"
-                                   class="form-control" required>
+                                value="{{ $phicSetting->settings['rate'] ?? 0 }}"
+                                class="form-control" required>
                         </div>
 
                         <!-- Minimum Salary -->
                         <div class="mb-3">
                             <label class="form-label">Minimum Salary</label>
                             <input type="number" step="0.01" name="min_salary" id="phicMinInput"
-                                   value="{{ $phicSetting->settings['min_salary'] ?? 10000 }}"
-                                   class="form-control" required>
+                                value="{{ $phicSetting->settings['min_salary'] ?? 0 }}"
+                                class="form-control" required>
                         </div>
 
                         <!-- Maximum Salary -->
                         <div class="mb-3">
                             <label class="form-label">Maximum Salary</label>
                             <input type="number" step="0.01" name="max_salary" id="phicMaxInput"
-                                   value="{{ $phicSetting->settings['max_salary'] ?? 100000 }}"
-                                   class="form-control" required>
+                                value="{{ $phicSetting->settings['max_salary'] ?? 0 }}"
+                                class="form-control" required>
                         </div>
 
-                        <!-- Employer/Employee Share (Fixed at 50/50) -->
+                        <!-- Employer/Employee Share -->
                         <div class="row">
                             <div class="col-6">
                                 <label class="form-label">Employer Share (%)</label>
-                                <input type="number" value="50" class="form-control" readonly>
+                                <input type="number" step="0.01" name="employer_share" id="phicEmployerPercent"
+                                    value="{{ $phicSetting->settings['employer_share'] ?? 0 }}"
+                                    class="form-control">
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Employee Share (%)</label>
-                                <input type="number" value="50" class="form-control" readonly>
+                                <input type="number" step="0.01" name="employee_share" id="phicEmployeePercent"
+                                    value="{{ $phicSetting->settings['employee_share'] ?? 0 }}"
+                                    class="form-control">
                             </div>
                         </div>
 
@@ -306,7 +313,7 @@
 
                         <div class="mb-3">
                             <label class="form-label">Sample Monthly Salary</label>
-                            <input type="number" step="0.01" id="phicSampleSalary" class="form-control" value="25000">
+                            <input type="number" step="0.01" id="phicSampleSalary" class="form-control" value="0">
                         </div>
 
                         <div class="mb-3">
@@ -318,14 +325,12 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <!-- VIEW MODE BUTTONS -->
                     <div id="phicViewModeButtons" style="display: none;">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="button" class="btn btn-primary" id="phicEditButton">Edit</button>
                     </div>
-                    
                     <!-- EDIT MODE BUTTONS -->
                     <div id="phicEditModeButtons">
                         <button type="button" class="btn btn-outline-secondary" id="phicCancelEditButton">Cancel</button>
@@ -439,7 +444,7 @@
 <!-- Income Tax Modal -->
 <div class="modal fade" id="taxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <form method="POST" action="{{ route('deductions.update', $taxSetting->id ?? 0) }}" id="taxForm">
+        <form method="POST" action="{{ route('tax.update') }}" id="taxForm">
             @csrf
             @method('PUT')
 

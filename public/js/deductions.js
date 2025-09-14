@@ -108,6 +108,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const cancelBtn = document.getElementById('cancelSSSBtn');
     const saveBtn = document.getElementById('saveSSSBtn');
     const closeBtn = document.getElementById('closeSSSBtn');
+    const sssForm = document.getElementById('sssForm');
+
+    if (sssForm) {
+        console.log('SSS Form found!');
+        console.log('Form action:', sssForm.action);
+        console.log('Form method:', sssForm.method);
+        
+        sssForm.addEventListener('submit', function(e) {
+            console.log('Form is being submitted!');
+            console.log('Action URL:', this.action);
+            console.log('Method:', this.method);
+            
+            // Check form data
+            const formData = new FormData(this);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+            }
+            
+            // Let the form submit normally (removed e.preventDefault())
+        });
+    } else {
+        console.log('SSS Form NOT found!');
+    }
 
     // Switch to read-only mode by default
     function setReadOnlyMode() {
@@ -180,12 +204,50 @@ document.addEventListener('DOMContentLoaded', function () {
         attachComputeListeners(row);
     });
 
+    // Replace the existing "Remove row" section with this:
+
     // Remove row
     tableBody?.addEventListener('click', function (e) {
         if (e.target.classList.contains('removeBracket')) {
-            e.target.closest('tr').remove();
-            // Reindex remaining rows
-            reindexRows();
+            const row = e.target.closest('tr');
+            const idInput = row.querySelector('input[name*="[id]"]');
+            
+            if (idInput && idInput.value) {
+                // This is an existing record, delete from database
+                const bracketId = idInput.value;
+                
+                if (confirm('Are you sure you want to delete this SSS bracket?')) {
+                    // Send DELETE request
+                    fetch(`/sss/${bracketId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': window.csrfToken || document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove row from table
+                            row.remove();
+                            // Reindex remaining rows
+                            reindexRows();
+                            alert('SSS bracket deleted successfully');
+                        } else {
+                            alert('Failed to delete SSS bracket: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error deleting SSS bracket');
+                    });
+                }
+            } else {
+                // This is a new row that hasn't been saved yet, just remove from DOM
+                row.remove();
+                reindexRows();
+            }
         }
     });
 
@@ -309,29 +371,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const minSalary = parseFloat(phicMinInput.value) || 0;
         const maxSalary = parseFloat(phicMaxInput.value) || 0;
         const sampleSalary = parseFloat(phicSampleSalary.value) || 0;
-
+        const employerPercent = parseFloat(phicEmployerPercent.value) || 0;
+        const employeePercent = parseFloat(phicEmployeePercent.value) || 0;
+    
         let totalPremium = 0;
         let computationNote = '';
-
-        if (sampleSalary <= minSalary) {
+    
+        if (sampleSalary <= minSalary && minSalary > 0) {
             totalPremium = (minSalary * rate) / 100;
             computationNote = `Salary ≤ ₱${minSalary.toLocaleString()}, using minimum salary for computation.`;
-        } else if (sampleSalary >= maxSalary) {
+        } else if (sampleSalary >= maxSalary && maxSalary > 0) {
             totalPremium = (maxSalary * rate) / 100;
             computationNote = `Salary ≥ ₱${maxSalary.toLocaleString()}, using maximum salary for computation.`;
-        } else {
+        } else if (sampleSalary > 0) {
             totalPremium = (sampleSalary * rate) / 100;
             computationNote = `₱${sampleSalary.toLocaleString()} × ${rate}% = ₱${totalPremium.toFixed(2)}`;
         }
-
-        const employerShare = totalPremium / 2;
-        const employeeShare = totalPremium / 2;
-
+    
+        const employerShare = (totalPremium * employerPercent) / 100;
+        const employeeShare = (totalPremium * employeePercent) / 100;
+    
         phicTotalPremium.textContent = totalPremium.toFixed(2);
         phicEmployerShare.textContent = employerShare.toFixed(2);
         phicEmployeeShare.textContent = employeeShare.toFixed(2);
         phicComputationNote.textContent = computationNote;
     }
+    
 
     // Add event listeners for PHIC inputs
     if (phicRateInput) phicRateInput.addEventListener('input', updatePhicSample);
@@ -339,8 +404,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (phicMaxInput) phicMaxInput.addEventListener('input', updatePhicSample);
     if (phicSampleSalary) phicSampleSalary.addEventListener('input', updatePhicSample);
 
-    // Initialize PHIC sample computation
-    if (phicRateInput) updatePhicSample();
 });
 
 // HDMF Contribution functionality
@@ -362,10 +425,10 @@ document.addEventListener('DOMContentLoaded', function() {
     hdmfModal.addEventListener('show.bs.modal', function() {
         const employee = hdmfModal.getAttribute('data-employee');
         const employer = hdmfModal.getAttribute('data-employer');
-
-        hdmfEmployee.value = employee || 200;
-        hdmfEmployer.value = employer || 200;
-
+    
+        hdmfEmployee.value = employee || 0;
+        hdmfEmployer.value = employer || 0;
+    
         if (employee && employer) {
             // Show view mode
             viewEmployee.textContent = employee;
@@ -382,23 +445,15 @@ document.addEventListener('DOMContentLoaded', function() {
             editButtons.style.display = 'block';
         }
     });
-
-    // Switch to edit mode
-    editButton.addEventListener('click', function() {
-        viewMode.style.display = 'none';
-        viewButtons.style.display = 'none';
-        editMode.style.display = 'block';
-        editButtons.style.display = 'block';
-    });
-
+    
     // Cancel edit
     cancelButton.addEventListener('click', function() {
-        const employee = hdmfModal.getAttribute('data-employee') || 200;
-        const employer = hdmfModal.getAttribute('data-employer') || 200;
-
+        const employee = hdmfModal.getAttribute('data-employee') || 0;
+        const employer = hdmfModal.getAttribute('data-employer') || 0;
+    
         hdmfEmployee.value = employee;
         hdmfEmployer.value = employer;
-
+    
         if (employee && employer) {
             viewEmployee.textContent = employee;
             viewEmployer.textContent = employer;
@@ -407,10 +462,9 @@ document.addEventListener('DOMContentLoaded', function() {
             editMode.style.display = 'none';
             editButtons.style.display = 'none';
         } else {
-            // Close modal if nothing saved yet
             bootstrap.Modal.getInstance(hdmfModal).hide();
         }
-    });
+    });    
 });
 
 // Income TAX functionality
